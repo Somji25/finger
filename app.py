@@ -30,13 +30,24 @@ client.loop_start()
 
 @app.route("/fingerprint", methods=["POST"])
 def fingerprint():
-    data = request.json
-    cmd = data.get("cmd")
-    fid = data.get("id")
-    message = f"{cmd},{fid}"
-    client.publish(MQTT_TOPIC, message)
-    print(f"Published message: {message} to topic: {MQTT_TOPIC}")
-    return jsonify({"status": "ok", "sent": message})
+    try:
+        data = request.json
+        if not data or "cmd" not in data or "id" not in data:
+            return jsonify({"status": "error", "message": "Invalid JSON payload. 'cmd' and 'id' are required."}), 400
+            
+        cmd = data.get("cmd")
+        fid = data.get("id")
+        
+        message = f"{cmd},{fid}"
+        client.publish(MQTT_TOPIC, message)
+        
+        print(f"Published message: {message} to topic: {MQTT_TOPIC}")
+        
+        return jsonify({"status": "success", "message": "MQTT message published successfully"})
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        return jsonify({"status": "error", "message": "An internal server error occurred"}), 500
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(host='0.0.0.0', port=5000, debug=True)
